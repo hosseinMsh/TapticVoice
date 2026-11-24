@@ -1,4 +1,20 @@
+# Build & binaries
+**/build/
 build/
-nospeaker
-.DS_Store
 dist/
+nospeaker
+TapticVoice.app
+
+# Python & Temporary files
+__pycache__/
+*.py[cod]
+*$py.class
+*.wav
+*.mp3
+/tmp/
+
+# macOS system
+.DS_Store
+.AppleDouble
+.LSOverride
+._*

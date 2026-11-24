@@ -334,6 +334,19 @@ func render(_ text: String) -> [Frame] {
     return f
 }
 
+func renderFile(_ path: String) -> [Frame] {
+    let url = URL(fileURLWithPath: path)
+    guard let file = try? AVAudioFile(forReading: url),
+          let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)),
+          (try? file.read(into: buf)) != nil, let ch = buf.floatChannelData?[0] else {
+        fail("Couldn't read WAV file at \(path).\nMake sure it is a valid 16kHz mono float32 WAV file.", headline: "nospeaker couldn't read audio file.")
+    }
+    var f = analyse(Array(UnsafeBufferPointer(start: ch, count: Int(buf.frameLength))))
+    while let first = f.first, first.level == 0 { f.removeFirst() }
+    while let last = f.last, last.level == 0 { f.removeLast() }
+    return f
+}
+
 func lpc(_ x: [Double], order p: Int) -> ([Double], Double) {
     var r = [Double](repeating: 0, count: p + 1)
     for k in 0...p { var s = 0.0; for i in k..<x.count { s += x[i] * x[i - k] }; r[k] = s }
@@ -1561,6 +1574,7 @@ if flag("--help") || flag("-h") {
 }
 
 voiceName = option("--voice", example: "Daniel")
+let audioFile = option("--file", example: "speech.wav")
 if let v = voiceName, !voiceExists(v) {
     fail("There's no voice called \"\(v)\" on this Mac.\nList the voices you have with: say -v '?'", headline: "nospeaker can't use that voice.", code: 64)
 }
@@ -1577,10 +1591,16 @@ atexit { restoreTerminal() }
 motor = openMotor()
 motorPointer = Unmanaged.passUnretained(motor! as AnyObject).toOpaque()
 
-if wantsSweep || !args.isEmpty {
+if wantsSweep || !args.isEmpty || audioFile != nil {
     pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0)
     if wantsSweep { print("sweeping 100 Hz → 4 kHz…"); sweep(seconds: 5) }
-    if !args.isEmpty {
+    if let audioFile {
+        let text = args.joined(separator: " ")
+        let frames = renderFile(audioFile)
+        let captionText = text.isEmpty ? "audio file" : text
+        print("trackpad: “\(captionText)”")
+        talk(frames, text: captionText)
+    } else if !args.isEmpty {
         let text = args.joined(separator: " ")
         let frames = render(text)
         print("trackpad: “\(text)”")
