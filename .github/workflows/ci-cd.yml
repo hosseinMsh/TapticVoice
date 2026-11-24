@@ -1,0 +1,72 @@
+name: CI/CD Build & Release
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Package macOS App
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python Dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install edge-tts
+
+      - name: Verify Swift & Xcode Environment
+        run: |
+          swiftc --version
+          xcode-select -p
+
+      - name: Build TapticVoice Native App (.app & .zip)
+        run: |
+          chmod +x ./package_release.sh ./apps/TapticVoice/build_app.sh
+          ./package_release.sh
+
+      - name: Build nospeaker CLI Tool
+        run: |
+          chmod +x ./build.sh
+          ./build.sh || true
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TapticVoice-macOS
+          path: |
+            dist/TapticVoice-macOS.zip
+            nospeaker
+          if-no-files-found: warn
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "TapticVoice Studio ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist/TapticVoice-macOS.zip
+            nospeaker
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

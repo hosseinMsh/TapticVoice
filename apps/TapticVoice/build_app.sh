@@ -19,11 +19,20 @@ RESOURCES_DIR="$CONTENTS/Resources"
 rm -rf "$APP_BUNDLE"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR" /tmp/clang-cache
 
+# Auto-detect DEVELOPER_DIR if not set
+if [ -z "$DEVELOPER_DIR" ]; then
+    if [ -d "/Library/Developer/CommandLineTools" ]; then
+        export DEVELOPER_DIR="/Library/Developer/CommandLineTools"
+    fi
+fi
+
+ARCH=$(uname -m)
+TARGET="${ARCH}-apple-macos13"
+
 # 1. Compile Swift sources
-echo "[1/4] Compiling Swift sources..."
-DEVELOPER_DIR=/Library/Developer/CommandLineTools \
+echo "[1/4] Compiling Swift sources for ${TARGET}..."
 swiftc -O \
-    -target arm64-apple-macos13 \
+    -target "${TARGET}" \
     -module-cache-path /tmp/clang-cache \
     -o "$MACOS_DIR/$APP_NAME" \
     Sources/AppMain.swift \
