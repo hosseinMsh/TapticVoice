@@ -6,7 +6,7 @@
 ### Haptic Acoustic Voice Synthesis on MacBook Force Touch Trackpads
 
 [![CI/CD](https://github.com/hosseinMsh/TapticVoice/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/hosseinMsh/TapticVoice/actions/workflows/ci-cd.yml)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](https://github.com/hosseinMsh/TapticVoice/releases)
+[![Version](https://img.shields.io/badge/version-0.1.1-blue?style=flat-square)](https://github.com/hosseinMsh/TapticVoice/releases)
 [![macOS](https://img.shields.io/badge/macOS-12.0%2B-blue?logo=apple&style=flat-square)](https://apple.com)
 [![Swift](https://img.shields.io/badge/Swift-6.0%2B-orange?logo=swift&style=flat-square)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/UI-SwiftUI%20%2B%20AppKit-indigo?style=flat-square)](https://developer.apple.com/xcode/swiftui/)

@@ -232,7 +232,8 @@ public struct MainView: View {
         speechBridge.synthesize(
             text: inputText,
             speedPct: Int(speedPct),
-            pitchHz: Int(pitchHz)
+            pitchHz: Int(pitchHz),
+            hapticMastering: hapticMastering
         ) { url in
             guard let url = url else { return }
             self.currentWavUrl = url
@@ -250,7 +251,8 @@ public struct MainView: View {
         speechBridge.synthesize(
             text: inputText,
             speedPct: Int(speedPct),
-            pitchHz: Int(pitchHz)
+            pitchHz: Int(pitchHz),
+            hapticMastering: hapticMastering
         ) { url in
             guard let url = url else { return }
             self.currentWavUrl = url

@@ -29,6 +29,14 @@ fi
 ARCH=$(uname -m)
 TARGET="${ARCH}-apple-macos13"
 
+# Build standalone synthesizer helper if missing
+if [ ! -f "$BUILD_DIR/bin/taptic_synth" ]; then
+    echo "[0/4] Building standalone synthesizer helper..."
+    python3 -m PyInstaller --clean --noconfirm --onefile --name taptic_synth \
+        --distpath "$BUILD_DIR/bin" --workpath /tmp/pybuild --specpath /tmp/pyspec \
+        Sources/Resources/synth_cli.py
+fi
+
 # 1. Compile Swift sources
 echo "[1/4] Compiling Swift sources for ${TARGET}..."
 swiftc -O \
@@ -42,13 +50,14 @@ swiftc -O \
     Sources/Views/ControlsView.swift \
     Sources/Views/WaveformVisualizer.swift
 
-echo "[2/4] Copying bundle resources..."
+echo "[2/4] Copying bundle resources & standalone helpers..."
 cp Sources/Resources/Info.plist "$CONTENTS/Info.plist"
 cp Assets/AppIcon.icns "$RESOURCES_DIR/AppIcon.icns"
-cp Sources/Resources/taptic_synth.py "$RESOURCES_DIR/taptic_synth.py"
-chmod +x "$RESOURCES_DIR/taptic_synth.py"
+cp "$BUILD_DIR/bin/taptic_synth" "$MACOS_DIR/taptic_synth"
+chmod +x "$MACOS_DIR/taptic_synth"
 
-echo "[3/4] Ad-hoc codesigning .app bundle..."
+echo "[3/4] Ad-hoc codesigning embedded helpers & .app bundle..."
+codesign --force --sign - "$MACOS_DIR/taptic_synth"
 codesign --force --deep --sign - "$APP_BUNDLE"
 
 echo "[4/4] Verifying bundle structure..."
