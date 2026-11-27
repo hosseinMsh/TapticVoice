@@ -1,19 +1,34 @@
-# Build & binaries
+# Build & dependency caches (never commit large binaries or generated bundles)
 **/build/
 build/
 dist/
-nospeaker
-TapticVoice.app
+apps/TapticVoice/Vendor/
+apps/TapticVoice/.build/
+.build/
+.swiftpm/
 
-# Python & Temporary files
-__pycache__/
-*.py[cod]
-*$py.class
+# macOS bundles & binary artifacts
+*.app/
+*.dmg
+*.zip
+*.tar.bz2
+*.onnx
+*.dylib
+*.a
+
+# Audio & temporary files
 *.wav
 *.mp3
+*.aiff
 /tmp/
 
-# macOS system
+# Python & IDE
+__pycache__/
+*.py[cod]
+.vscode/
+.idea/
+
+# macOS system files
 .DS_Store
 .AppleDouble
 .LSOverride

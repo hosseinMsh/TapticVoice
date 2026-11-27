@@ -1,15 +1,21 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 
-echo "Packaging TapticVoice Release..."
+PLIST="$DIR/apps/TapticVoice/Sources/TapticVoice/Resources/Info.plist"
+VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST" 2>/dev/null || echo "0.2.0")
+
+echo "Packaging TapticVoice Studio v${VERSION}..."
 ./apps/TapticVoice/build_app.sh
 
-mkdir -p dist
-cd apps/TapticVoice/build
-ditto -c -k --sequesterRsrc --keepParent TapticVoice.app "$DIR/dist/TapticVoice-macOS.zip"
+mkdir -p "$DIR/dist"
+OUT_ZIP="$DIR/dist/TapticVoice-v${VERSION}-macOS.zip"
+rm -f "$OUT_ZIP"
 
-echo "Release package created: $DIR/dist/TapticVoice-macOS.zip"
-ls -lh "$DIR/dist/TapticVoice-macOS.zip"
+cd "$DIR/apps/TapticVoice/build"
+ditto -c -k --sequesterRsrc --keepParent TapticVoice.app "$OUT_ZIP"
+
+echo "Release archive ready: $OUT_ZIP"
+ls -lh "$OUT_ZIP"

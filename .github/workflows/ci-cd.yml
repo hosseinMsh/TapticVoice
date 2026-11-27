@@ -1,4 +1,4 @@
-name: CI/CD Build & Release
+name: CI/CD Test, Build & Release
 
 on:
   push:
@@ -13,8 +13,35 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build & Package macOS App
+  test:
+    name: Unit Tests & Validation
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Check Swift & Xcode
+        run: |
+          swift --version
+          xcode-select -p
+
+      - name: Lint Info.plist & Shell Scripts
+        run: |
+          plutil -lint apps/TapticVoice/Sources/TapticVoice/Resources/Info.plist
+          bash -n apps/TapticVoice/scripts/fetch_deps.sh
+          bash -n apps/TapticVoice/scripts/run_tests.sh
+          bash -n apps/TapticVoice/build_app.sh
+          bash -n package_release.sh
+
+      - name: Run Swift Unit Tests (XCTest)
+        run: |
+          cd apps/TapticVoice
+          swift test
+
+  build-and-release:
+    name: Build Portable App & Publish Release
+    needs: test
     runs-on: macos-latest
 
     steps:
@@ -23,39 +50,41 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Cache Offline Sherpa-ONNX Runtime & Tiny Models
+        uses: actions/cache@v4
         with:
-          python-version: '3.12'
+          path: apps/TapticVoice/Vendor
+          key: sherpa-v1.13.8-models-fa-en-v1
 
-      - name: Install Python Dependencies
+      - name: Fetch Offline Dependencies (if cache miss)
         run: |
-          python3 -m pip install --upgrade pip
-          pip install edge-tts pyinstaller
+          chmod +x ./apps/TapticVoice/scripts/fetch_deps.sh ./apps/TapticVoice/scripts/run_tests.sh
+          ./apps/TapticVoice/scripts/fetch_deps.sh
 
-      - name: Verify Swift & Xcode Environment
+      - name: Verify Live Offline Persian & English TTS Integration
         run: |
-          swiftc --version
-          xcode-select -p
+          cd apps/TapticVoice
+          swift run TapticCoreVerify
 
-      - name: Build TapticVoice Native App (.app & .zip)
+      - name: Build Universal Self-Contained App & Release Zip
         run: |
-          chmod +x ./package_release.sh ./apps/TapticVoice/build_app.sh
+          chmod +x ./apps/TapticVoice/build_app.sh ./package_release.sh
           ./package_release.sh
 
-      - name: Build nospeaker CLI Tool
+      - name: Verify Zero External Dependencies & Codesign
         run: |
-          chmod +x ./build.sh
-          ./build.sh || true
+          APP="apps/TapticVoice/build/TapticVoice.app"
+          codesign -vvv --deep "$APP"
+          otool -L "$APP/Contents/MacOS/TapticVoice"
+          otool -L "$APP/Contents/Frameworks/libsherpa-onnx-c-api.dylib"
+          otool -L "$APP/Contents/Frameworks/libonnxruntime.dylib"
 
-      - name: Upload Build Artifacts
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TapticVoice-macOS
-          path: |
-            dist/TapticVoice-macOS.zip
-            nospeaker
-          if-no-files-found: warn
+          path: dist/TapticVoice-*.zip
+          if-no-files-found: error
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -65,8 +94,6 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-          files: |
-            dist/TapticVoice-macOS.zip
-            nospeaker
+          files: dist/TapticVoice-*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
